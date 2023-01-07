@@ -134,6 +134,8 @@ def add_data():
     is_marked_for_review = bool(request.form.get("is_marked_for_review", False))
     audio_file = request.files["audio_file"]
     original_filename = secure_filename(audio_file.filename)
+    youtube_start_time = request.form.get("youtube_start_time", None)
+    youtube_end_time = request.form.get("youtube_end_time", None)
 
     extension = Path(original_filename).suffix.lower()
 
@@ -152,6 +154,8 @@ def add_data():
         reference_transcription=reference_transcription,
         is_marked_for_review=is_marked_for_review,
         assigned_user_id=user.id,
+        youtube_start_time=youtube_start_time,
+        youtube_end_time=youtube_end_time,
     )
     db.session.add(data)
     db.session.flush()

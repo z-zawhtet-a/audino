@@ -59,6 +59,10 @@ class Data(db.Model):
 
     original_filename = db.Column("original_filename", db.String(100), nullable=False)
 
+    youtube_start_time = db.Column("youtube_start_time", db.Integer(), nullable=True)
+
+    youtube_end_time = db.Column("youtube_end_time", db.Integer(), nullable=True)
+
     reference_transcription = db.Column(
         "reference_transcription", db.Text(), nullable=True
     )
@@ -103,6 +107,8 @@ class Data(db.Model):
                 "username": self.assigned_user.username,
                 "role": self.assigned_user.role.role,
             },
+            "youtube_start_time": self.youtube_start_time,
+            "youtube_end_time": self.youtube_end_time,
         }
 
 

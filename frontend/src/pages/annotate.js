@@ -24,12 +24,20 @@ class Annotate extends React.Component {
     super(props);
 
     const projectId = Number(this.props.match.params.projectid);
-    const dataId = Number(this.props.match.params.dataid);
+    const dataParams = this.props.match.params.dataid.split("&");
+    const dataId = Number(dataParams[0]);
+    const fileName = dataParams[1];
+    const youtubeId = dataParams[1]
+      .split(".")[0]
+      .substr(0, fileName.lastIndexOf("_"));
+    const youtubeStartTime = Math.floor(Number(dataParams[2]) / 1000);
 
     this.state = {
       isPlaying: false,
       projectId,
       dataId,
+      fileName,
+      youtubeId,
       labels: {},
       labelsUrl: `/api/projects/${projectId}/labels`,
       dataUrl: `/api/projects/${projectId}/data/${dataId}`,
@@ -43,6 +51,7 @@ class Annotate extends React.Component {
       isSegmentDeleting: false,
       errorMessage: null,
       successMessage: null,
+      youtubeStartTime,
     };
 
     this.labelRef = {};
@@ -361,6 +370,7 @@ class Annotate extends React.Component {
       errorMessage,
       successMessage,
     } = this.state;
+    console.log(this.state.youtubeStartTime);
     return (
       <div>
         <Helmet>
@@ -368,6 +378,7 @@ class Annotate extends React.Component {
         </Helmet>
         <div className="container h-100">
           <div className="h-100 mt-5 text-center">
+            <h3>{this.state.fileName}</h3>
             {errorMessage ? (
               <Alert
                 type="danger"
@@ -510,7 +521,7 @@ class Annotate extends React.Component {
                                   selectedSegment.data.annotations &&
                                   selectedSegment.data.annotations[key] &&
                                   selectedSegment.data.annotations[key][
-                                  "values"
+                                    "values"
                                   ]) ||
                                 (value["type"] === "multiselect" ? [] : "")
                               }
@@ -577,6 +588,19 @@ class Annotate extends React.Component {
                     </label>
                   </div>
                 </div>
+              </div>
+            ) : null}
+            {this.state.youtubeId ? (
+              <div className="video-responsive">
+                <iframe
+                  width="853"
+                  height="480"
+                  src={`https://www.youtube.com/embed/${this.state.youtubeId}?start=${this.state.youtubeStartTime}`}
+                  frameBorder="0"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                  title="Reference Video"
+                />
               </div>
             ) : null}
           </div>

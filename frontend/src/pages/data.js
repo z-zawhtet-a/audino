@@ -16,6 +16,7 @@ class Data extends React.Component {
     this.state = {
       projectId,
       data: [],
+      filterKeyword: params.get("search") || "",
       active: params.get("active") || "pending",
       page: params.get("page") || 1,
       count: {
@@ -26,10 +27,10 @@ class Data extends React.Component {
       },
       apiUrl: `/api/current_user/projects/${projectId}/data`,
       tabUrls: {
-        pending: this.prepareUrl(projectId, 1, "pending"),
-        completed: this.prepareUrl(projectId, 1, "completed"),
-        all: this.prepareUrl(projectId, 1, "all"),
-        marked_review: this.prepareUrl(projectId, 1, "marked_review"),
+        pending: this.prepareUrl(projectId, 1, "pending", params.get("search") || ""),
+        completed: this.prepareUrl(projectId, 1, "completed", params.get("search") || ""),
+        all: this.prepareUrl(projectId, 1, "all", params.get("search") || ""),
+        marked_review: this.prepareUrl(projectId, 1, "marked_review", params.get("search") || ""),
       },
       nextPage: null,
       prevPage: null,
@@ -37,8 +38,8 @@ class Data extends React.Component {
     };
   }
 
-  prepareUrl(projectId, page, active) {
-    return `/projects/${projectId}/data?page=${page}&active=${active}`;
+  prepareUrl(projectId, page, active, searchKeyword) {
+    return `/projects/${projectId}/data?page=${page}&active=${active}&search=${searchKeyword}`;
   }
 
   componentDidMount() {
@@ -51,14 +52,8 @@ class Data extends React.Component {
       url: apiUrl,
     })
       .then((response) => {
-        const {
-          data,
-          count,
-          active,
-          page,
-          next_page,
-          prev_page,
-        } = response.data;
+        const { data, count, active, page, next_page, prev_page } =
+          response.data;
         this.setState({
           data,
           count,
@@ -88,10 +83,11 @@ class Data extends React.Component {
       nextPage,
       prevPage,
       tabUrls,
+      filterKeyword,
     } = this.state;
 
-    const nextPageUrl = this.prepareUrl(projectId, nextPage, active);
-    const prevPageUrl = this.prepareUrl(projectId, prevPage, active);
+    const nextPageUrl = this.prepareUrl(projectId, nextPage, active, filterKeyword);
+    const prevPageUrl = this.prepareUrl(projectId, prevPage, active, filterKeyword);
 
     return (
       <div>
@@ -159,28 +155,57 @@ class Data extends React.Component {
                         <th scope="col">File Name</th>
                         <th scope="col">No. of segmentations</th>
                         <th scope="col">Created On</th>
+                        <div className="col-12 my-4 justify-content-center align-items-center text-center">
+                          {prevPage ? (
+                            <a className="col" href={prevPageUrl}>
+                              Previous
+                            </a>
+                          ) : null}
+
+                          {data.length !== 0 ? <span className="col">{page}</span> : null}
+                          {nextPage ? (
+                            <a className="col" href={nextPageUrl}>
+                              Next
+                            </a>
+                          ) : null}
+                        </div>
+                        <input
+                          value={this.state.filterKeyword}
+                          onChange={(e) =>
+                            this.setState({ filterKeyword: e.target.value })
+                          }
+                          type="text"
+                          placeholder="Filter.."
+                        ></input>
                       </tr>
                     </thead>
                     <tbody>
-                      {data.map((data, index) => {
-                        return (
-                          <tr key={index}>
-                            <td className="align-middle">
-                              <a
-                                href={`/projects/${projectId}/data/${data["data_id"]}/annotate`}
-                              >
-                                {data["original_filename"]}
-                              </a>
-                            </td>
-                            <td className="align-middle">
-                              {data["number_of_segmentations"]}
-                            </td>
-                            <td className="align-middle">
-                              {data["created_on"]}
-                            </td>
-                          </tr>
-                        );
-                      })}
+                      {data
+                        .filter(
+                          (x) =>
+                            x["original_filename"].includes(
+                              this.state.filterKeyword
+                            ) || this.state.filterKeyword === ""
+                        )
+                        .map((data, index) => {
+                          return (
+                            <tr key={index}>
+                              <td className="align-middle">
+                                <a
+                                  href={`/projects/${projectId}/data/${`${data["data_id"]}&${data["original_filename"]}&${data["youtube_start_time"]}`}/annotate`}
+                                >
+                                  {data["original_filename"]}
+                                </a>
+                              </td>
+                              <td className="align-middle">
+                                {data["number_of_segmentations"]}
+                              </td>
+                              <td className="align-middle">
+                                {data["created_on"]}
+                              </td>
+                            </tr>
+                          );
+                        })}
                     </tbody>
                   </table>
                 ) : null}
@@ -191,20 +216,6 @@ class Data extends React.Component {
             {isDataLoading ? <Loader /> : null}
             {!isDataLoading && data.length === 0 ? (
               <div className="font-weight-bold">No data exists!</div>
-            ) : null}
-          </div>
-          <div className="col-12 my-4 justify-content-center align-items-center text-center">
-            {prevPage ? (
-              <a className="col" href={prevPageUrl}>
-                Previous
-              </a>
-            ) : null}
-
-            {data.length !== 0 ? <span className="col">{page}</span> : null}
-            {nextPage ? (
-              <a className="col" href={nextPageUrl}>
-                Next
-              </a>
             ) : null}
           </div>
         </div>

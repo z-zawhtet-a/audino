@@ -85,7 +85,7 @@ def fetch_data_for_project(project_id):
             assigned_user_id=request_user.id, project_id=project_id
         ).order_by(Data.last_modified.desc())
 
-        paginated_data = data[active].paginate(page, 10, False)
+        paginated_data = data[active].paginate(page, 100, False)
 
         next_page = paginated_data.next_num if paginated_data.has_next else None
         prev_page = paginated_data.prev_num if paginated_data.has_prev else None
@@ -99,6 +99,8 @@ def fetch_data_for_project(project_id):
                     "reference_transcription": data_point.reference_transcription,
                     "is_marked_for_review": data_point.is_marked_for_review,
                     "number_of_segmentations": len(data_point.segmentations),
+                    "youtube_start_time": data_point.youtube_start_time,
+                    "youtube_end_time": data_point.youtube_end_time,
                 }
                 for data_point in paginated_data.items
             ]
