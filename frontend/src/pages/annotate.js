@@ -78,6 +78,13 @@ class Annotate extends React.Component {
     });
     wavesurfer.on("ready", () => {
       wavesurfer.enableDragSelection({ color: "rgba(0, 102, 255, 0.3)" });
+      // Check if there is no region, if so, add a region for the whole audio
+      if (!Object.keys(wavesurfer.regions.list).length) {
+        wavesurfer.addRegion({
+          start: 0,
+          end: wavesurfer.getDuration(),
+        });
+      }
     });
     wavesurfer.on("region-in", (region) => {
       this.showSegmentTranscription(region);
@@ -144,6 +151,7 @@ class Annotate extends React.Component {
         wavesurfer.zoom(zoom);
 
         this.setState({ wavesurfer });
+
         this.loadRegions(regions);
       })
       .catch((error) => {
@@ -370,7 +378,7 @@ class Annotate extends React.Component {
       errorMessage,
       successMessage,
     } = this.state;
-    console.log(this.state.youtubeStartTime);
+
     return (
       <div>
         <Helmet>
