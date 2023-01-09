@@ -1,5 +1,6 @@
 import axios from "axios";
 import React from "react";
+import { shuffle } from "lodash";
 import WaveSurfer from "wavesurfer.js";
 import RegionsPlugin from "wavesurfer.js/dist/plugin/wavesurfer.regions.min.js";
 import TimelinePlugin from "wavesurfer.js/dist/plugin/wavesurfer.timeline.min.js";
@@ -36,8 +37,20 @@ class Annotate extends React.Component {
       isPlaying: false,
       projectId,
       dataId,
+      data: [],
       fileName,
       youtubeId,
+      active: "pending",
+      count: {
+        pending: 0,
+        completed: 0,
+        all: 0,
+        marked_review: 0,
+      },
+      nextPage: null,
+      prevPage: null,
+      page: 1, // TODO: get from url
+      apiUrl: `/api/current_user/projects/${projectId}/data`,
       labels: {},
       labelsUrl: `/api/projects/${projectId}/labels`,
       dataUrl: `/api/projects/${projectId}/data/${dataId}`,
@@ -52,6 +65,9 @@ class Annotate extends React.Component {
       errorMessage: null,
       successMessage: null,
       youtubeStartTime,
+      nextDataId: null,
+      nextFileName: null,
+      nextYoutubeStartTime: null,
     };
 
     this.labelRef = {};
@@ -61,6 +77,40 @@ class Annotate extends React.Component {
   componentDidMount() {
     const { labelsUrl, dataUrl } = this.state;
     this.setState({ isDataLoading: true });
+
+    let { apiUrl, page, active } = this.state;
+    apiUrl = `${apiUrl}?page=${page}&active=${active}`;
+
+    axios({
+      method: "get",
+      url: apiUrl,
+    })
+      .then((response) => {
+        const { data, count, active, page, next_page, prev_page } =
+          response.data;
+        const nextRandomData = shuffle(data).find(
+          (d) => d["data_id"] !== this.state.dataId
+        );
+        this.setState({
+          data,
+          count,
+          active,
+          page,
+          nextPage: next_page,
+          prevPage: prev_page,
+          isDataLoading: false,
+          nextDataId: nextRandomData["data_id"],
+          nextFileName: nextRandomData["original_filename"],
+          nextYoutubeStartTime: nextRandomData["youtube_start_time"],
+        });
+      })
+      .catch((error) => {
+        this.setState({
+          errorMessage: error.response.data.message,
+          isDataLoading: false,
+        });
+      });
+
     const wavesurfer = WaveSurfer.create({
       container: "#waveform",
       barWidth: 2,
@@ -554,7 +604,19 @@ class Annotate extends React.Component {
                         );
                       })}
                     </div>
-                    <div className="row justify-content-center my-4">
+                    <div className="row justify-content-center my-8">
+                      <div className="col-2">
+                          <a
+                            href={`/projects/${this.state.projectId}/data`}
+                          >
+                            <Button
+                              size="lg"
+                              type="danger"
+                              disabled={isSegmentSaving}
+                              text="Back to files"
+                            />
+                          </a>
+                        </div>
                       <div className="col-2">
                         <Button
                           size="lg"
@@ -574,6 +636,20 @@ class Annotate extends React.Component {
                           isSubmitting={isSegmentSaving}
                           text="Save"
                         />
+                      </div>
+                      <div className="col-2">
+                        <a
+                          href={`/projects/${
+                            this.state.projectId
+                          }/data/${`${this.state.nextDataId}&${this.state.nextFileName}&${this.state.nextYoutubeStartTime}`}/annotate`}
+                        >
+                          <Button
+                            size="lg"
+                            type="primary"
+                            disabled={isSegmentSaving}
+                            text="Next"
+                          />
+                        </a>
                       </div>
                     </div>
                   </div>
