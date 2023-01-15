@@ -134,6 +134,9 @@ class Annotate extends React.Component {
           start: 0,
           end: wavesurfer.getDuration(),
         });
+
+        const firstRegionKey = Object.keys(wavesurfer.regions.list)[0];
+        this.setState({ selectedSegment: wavesurfer.regions.list[firstRegionKey] });
       }
     });
     wavesurfer.on("region-in", (region) => {
@@ -151,6 +154,7 @@ class Annotate extends React.Component {
 
     wavesurfer.on("region-click", (r, e) => {
       e.stopPropagation();
+      console.log('r', r)
       this.setState({
         isPlaying: true,
         selectedSegment: r,
