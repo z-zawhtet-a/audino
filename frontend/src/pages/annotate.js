@@ -154,7 +154,6 @@ class Annotate extends React.Component {
 
     wavesurfer.on("region-click", (r, e) => {
       e.stopPropagation();
-      console.log('r', r)
       this.setState({
         isPlaying: true,
         selectedSegment: r,
