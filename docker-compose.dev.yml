@@ -1,6 +1,7 @@
 version: "3.7"
 services:
   backend:
+    platform: linux/amd64
     image: python:3.7
     command: ["bash", "/app/backend/scripts/run-dev.sh"]
     volumes:
@@ -17,7 +18,7 @@ services:
       JWT_SECRET_KEY: "secretkey"
       JWT_REDIS_STORE_URL: "redis://:audino@redis:6379/0"
     ports:
-      - 5000:5000
+      - 5001:5000
     depends_on:
       - mysql
       - redis
@@ -26,6 +27,7 @@ services:
       - frontend-network
 
   frontend:
+    platform: linux/amd64
     image: node:14.18.1
     command: ["bash", "/app/frontend/scripts/run-dev.sh"]
     volumes:
@@ -40,6 +42,7 @@ services:
       - frontend-network
 
   mysql:
+    platform: linux/amd64
     image: mysql:5.7
     volumes:
       - ./mysql:/mysql
@@ -54,6 +57,7 @@ services:
       - backend-network
 
   redis:
+    platform: linux/amd64
     build: ./redis
     volumes:
       - redis_data:/data

@@ -1,6 +1,6 @@
 import axios from "axios";
 import React from "react";
-import { shuffle } from "lodash";
+import { sortBy } from "lodash";
 import WaveSurfer from "wavesurfer.js";
 import RegionsPlugin from "wavesurfer.js/dist/plugin/wavesurfer.regions.min.js";
 import TimelinePlugin from "wavesurfer.js/dist/plugin/wavesurfer.timeline.min.js";
@@ -32,6 +32,8 @@ class Annotate extends React.Component {
       .split(".")[0]
       .substr(0, fileName.lastIndexOf("_"));
     const youtubeStartTime = Math.floor(Number(dataParams[2]) / 1000);
+    const page = Number(dataParams[3]) || 1;
+    const active = dataParams[4] || "pending";
 
     this.state = {
       isPlaying: false,
@@ -40,7 +42,7 @@ class Annotate extends React.Component {
       data: [],
       fileName,
       youtubeId,
-      active: "pending",
+      active: active,
       count: {
         pending: 0,
         completed: 0,
@@ -49,7 +51,7 @@ class Annotate extends React.Component {
       },
       nextPage: null,
       prevPage: null,
-      page: 1, // TODO: get from url
+      page: page, // TODO: get from url
       apiUrl: `/api/current_user/projects/${projectId}/data`,
       labels: {},
       labelsUrl: `/api/projects/${projectId}/labels`,
@@ -65,6 +67,7 @@ class Annotate extends React.Component {
       errorMessage: null,
       successMessage: null,
       youtubeStartTime,
+      nextItemAvailable: false,
       nextDataId: null,
       nextFileName: null,
       nextYoutubeStartTime: null,
@@ -74,42 +77,114 @@ class Annotate extends React.Component {
     this.transcription = null;
   }
 
-  componentDidMount() {
+  async componentDidMount() {
     const { labelsUrl, dataUrl } = this.state;
     this.setState({ isDataLoading: true });
-
     let { apiUrl, page, active } = this.state;
-    apiUrl = `${apiUrl}?page=${page}&active=${active}`;
+    let url = `${apiUrl}?page=${page}&active=${active}`;
 
-    axios({
-      method: "get",
-      url: apiUrl,
-    })
-      .then((response) => {
-        const { data, count, active, page, next_page, prev_page } =
-          response.data;
-        const nextRandomData = shuffle(data).find(
-          (d) => d["data_id"] !== this.state.dataId
-        );
+    try {
+      const response = await axios({
+        method: "get",
+        url,
+      });
+
+      const {
+        data,
+        count,
+        active: activeS,
+        page: pageS,
+        next_page: nextPage,
+        prev_page: prevPage,
+      } = response.data;
+      const sortedData = sortBy(data, (d) => {
+        const ext = d["original_filename"].split(".")[1];
+        const fname = d["original_filename"].split(".")[0].split("_");
+        const zeroPaddedFname = `${fname[0]}_${fname[1].padStart(
+          5,
+          "0"
+        )}.${ext}`;
+        return zeroPaddedFname;
+      });
+
+      const currentIdx = sortedData.findIndex(
+        (d) => d["data_id"] === this.state.dataId
+      );
+
+      if (currentIdx === -1 || currentIdx === sortedData.length - 1) {
+        if (nextPage) {
+          this.setState({ isDataLoading: true });
+          url = `${apiUrl}?page=${page + 1}&active=${active}`;
+
+          const response = await axios({
+            method: "get",
+            url,
+          });
+
+          const {
+            data,
+            count,
+            active: activeS,
+            page: pageS,
+            next_page,
+            prev_page,
+          } = response.data;
+
+          const sortedData = sortBy(data, (d) => {
+            const ext = d["original_filename"].split(".")[1];
+            const fname = d["original_filename"].split(".")[0].split("_");
+            const zeroPaddedFname = `${fname[0]}_${fname[1].padStart(
+              5,
+              "0"
+            )}.${ext}`;
+            return zeroPaddedFname;
+          });
+
+          this.setState({
+            data: sortedData,
+            count,
+            active: activeS,
+            page: pageS,
+            nextPage: next_page,
+            prevPage: prev_page,
+            isDataLoading: false,
+            nextDataId: sortedData[0]["data_id"],
+            nextFileName: sortedData[0]["original_filename"],
+            nextYoutubeStartTime: sortedData[0]["youtube_start_time"],
+            nextItemAvailable: true,
+          });
+        } else {
+          this.setState({
+            nextPage: null,
+            nextDataId: null,
+            nextFileName: null,
+            nextYoutubeStartTime: null,
+            nextItemAvailable: false,
+          });
+        }
+      } else {
+        const nextRandomData = sortedData[currentIdx + 1];
+
         this.setState({
           data,
           count,
-          active,
-          page,
-          nextPage: next_page,
-          prevPage: prev_page,
+          active: activeS,
+          page: pageS,
+          nextPage: nextPage,
+          prevPage: prevPage,
           isDataLoading: false,
           nextDataId: nextRandomData["data_id"],
           nextFileName: nextRandomData["original_filename"],
           nextYoutubeStartTime: nextRandomData["youtube_start_time"],
+          nextItemAvailable: true,
         });
-      })
-      .catch((error) => {
-        this.setState({
-          errorMessage: error.response.data.message,
-          isDataLoading: false,
-        });
+      }
+    } catch (error) {
+      this.setState({
+        errorMessage: error.message,
+        isDataLoading: false,
       });
+    }
 
     const wavesurfer = WaveSurfer.create({
       container: "#waveform",
@@ -136,7 +211,9 @@ class Annotate extends React.Component {
         });
 
         const firstRegionKey = Object.keys(wavesurfer.regions.list)[0];
-        this.setState({ selectedSegment: wavesurfer.regions.list[firstRegionKey] });
+        this.setState({
+          selectedSegment: wavesurfer.regions.list[firstRegionKey],
+        });
       }
     });
     wavesurfer.on("region-in", (region) => {
@@ -316,6 +393,86 @@ class Annotate extends React.Component {
     }
   }
 
+  handleSkipFile(e) {
+    const { selectedSegment, segmentationUrl, nextItemAvailable } = this.state;
+
+    const {
+      segmentation_id = null,
+    } = selectedSegment.data;
+
+    this.setState({ isSegmentSaving: true });
+
+    if (segmentation_id === null) {
+      axios({
+        method: "post",
+        url: segmentationUrl,
+        data: {
+          start: 0,
+          end: this.state.wavesurfer.getDuration(),
+          transcription: "*skipped_file*",
+          annotations: undefined,
+        },
+      })
+        .then((response) => {
+          const { segmentation_id } = response.data;
+          selectedSegment.data.segmentation_id = segmentation_id;
+          this.setState({
+            isSegmentSaving: false,
+            selectedSegment,
+            successMessage: "Segment saved",
+            errorMessage: null,
+          });
+          if (nextItemAvailable) {
+            this.props.history.push(`/projects/${
+              this.state.projectId
+            }/data/${`${this.state.nextDataId}&${this.state.nextFileName}&${this.state.nextYoutubeStartTime}&${this.state.page}&${this.state.active}`}/annotate`)
+            window.location.reload(false);
+          }
+        })
+        .catch((error) => {
+          console.log(error);
+          this.setState({
+            isSegmentSaving: false,
+            errorMessage: "Error saving segment",
+            successMessage: null,
+          });
+        });
+    } else {
+      axios({
+        method: "put",
+        url: `${segmentationUrl}/${segmentation_id}`,
+        data: {
+          start: 0,
+          end: this.state.wavesurfer.getDuration(),
+          transcription: "*skipped_file*",
+          annotations: undefined,
+        },
+      })
+        .then((response) => {
+          this.setState({
+            isSegmentSaving: false,
+            successMessage: "Segment saved",
+            errorMessage: null,
+          });
+
+          if (nextItemAvailable) {
+            this.props.history.push(`/projects/${
+              this.state.projectId
+            }/data/${`${this.state.nextDataId}&${this.state.nextFileName}&${this.state.nextYoutubeStartTime}&${this.state.page}&${this.state.active}`}/annotate`)
+            window.location.reload(false);
+          }
+        })
+        .catch((error) => {
+          console.log(error);
+          this.setState({
+            isSegmentSaving: false,
+            errorMessage: "Error saving segment",
+            successMessage: null,
+          });
+        });
+    }
+  }
+
   handleSegmentSave(e) {
     const { selectedSegment, segmentationUrl } = this.state;
     const { start, end } = selectedSegment;
@@ -430,6 +587,7 @@ class Annotate extends React.Component {
       isSegmentSaving,
       errorMessage,
       successMessage,
+      nextItemAvailable,
     } = this.state;
 
     return (
@@ -609,18 +767,6 @@ class Annotate extends React.Component {
                     </div>
                     <div className="row justify-content-center my-8">
                       <div className="col-2">
-                          <a
-                            href={`/projects/${this.state.projectId}/data`}
-                          >
-                            <Button
-                              size="lg"
-                              type="danger"
-                              disabled={isSegmentSaving}
-                              text="Back to files"
-                            />
-                          </a>
-                        </div>
-                      <div className="col-2">
                         <Button
                           size="lg"
                           type="danger"
@@ -629,6 +775,16 @@ class Annotate extends React.Component {
                           onClick={(e) => this.handleSegmentDelete(e)}
                           text="Delete"
                         />
+                      </div>
+                      <div className="col-2">
+                        <a href={`/projects/${this.state.projectId}/data`}>
+                          <Button
+                            size="lg"
+                            type="primary"
+                            disabled={isSegmentSaving}
+                            text="Back to files"
+                          />
+                        </a>
                       </div>
                       <div className="col-2">
                         <Button
@@ -641,18 +797,20 @@ class Annotate extends React.Component {
                         />
                       </div>
                       <div className="col-2">
-                        <a
-                          href={`/projects/${
-                            this.state.projectId
-                          }/data/${`${this.state.nextDataId}&${this.state.nextFileName}&${this.state.nextYoutubeStartTime}`}/annotate`}
-                        >
-                          <Button
-                            size="lg"
-                            type="primary"
-                            disabled={isSegmentSaving}
-                            text="Next"
-                          />
-                        </a>
+                        {!isSegmentSaving && nextItemAvailable ? (
+                          <a
+                            href={`/projects/${
+                              this.state.projectId
+                            }/data/${`${this.state.nextDataId}&${this.state.nextFileName}&${this.state.nextYoutubeStartTime}&${this.state.page}&${this.state.active}`}/annotate`}
+                          >
+                            <Button size="lg" type="primary" text="Next" />
+                          </a>
+                        ) : (
+                          <Button size="lg" type="danger" text="END" isDisabled={true} />
+                        )}
+                      </div>
+                      <div className="col-2">
+                        <Button size="lg" type="danger" text="Skip" isDisabled={isSegmentSaving} onClick={(e) => this.handleSkipFile(e)} />
                       </div>
                     </div>
                   </div>
@@ -663,7 +821,7 @@ class Annotate extends React.Component {
                       className="form-check-input"
                       type="checkbox"
                       id="isMarkedForReview"
-                      value={true}
+                      value={false}
                       checked={isMarkedForReview}
                       onChange={(e) => this.handleIsMarkedForReview(e)}
                     />

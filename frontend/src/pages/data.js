@@ -1,5 +1,6 @@
 import axios from "axios";
 import React from "react";
+import { sortBy } from "lodash";
 import { Helmet } from "react-helmet";
 import { withRouter } from "react-router-dom";
 
@@ -54,8 +55,14 @@ class Data extends React.Component {
       .then((response) => {
         const { data, count, active, page, next_page, prev_page } =
           response.data;
+        const sortedData = sortBy(data, d => {
+          const ext = d['original_filename'].split('.')[1]
+          const fname = d['original_filename'].split('.')[0].split('_')
+          const zeroPaddedFname = `${fname[0]}_${fname[1].padStart(5, '0')}.${ext}`
+          return zeroPaddedFname
+        });
         this.setState({
-          data,
+          data: sortedData,
           count,
           active,
           page,
@@ -192,7 +199,7 @@ class Data extends React.Component {
                             <tr key={index}>
                               <td className="align-middle">
                                 <a
-                                  href={`/projects/${projectId}/data/${`${data["data_id"]}&${data["original_filename"]}&${data["youtube_start_time"]}`}/annotate`}
+                                  href={`/projects/${projectId}/data/${`${data["data_id"]}&${data["original_filename"]}&${data["youtube_start_time"]}&${this.state.page}&${this.state.active}`}/annotate`}
                                 >
                                   {data["original_filename"]}
                                 </a>
