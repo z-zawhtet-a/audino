@@ -194,3 +194,72 @@ def add_data():
         ),
         201,
     )
+
+@api.route("/register-dataset", methods=["POST"])
+def register_dataset():
+    api_key = request.headers.get("Authorization", None)
+
+    if not api_key:
+        raise BadRequest(description="API Key missing from `Authorization` Header")
+
+    project = Project.query.filter_by(api_key=api_key).first()
+
+    if not project:
+        raise NotFound(description="No project exist with given API Key")
+
+    username = request.form.get("username", None)
+    user = User.query.filter_by(username=username).first()
+
+    if not user:
+        raise NotFound(description="No user found with given username")
+
+    reference_transcriptions = request.form.getlist("reference_transcriptions")
+    audio_files = request.form.getlist("audio_filenames")
+    original_filenames = [secure_filename(audio_file) for audio_file in audio_files]
+    uuid_filenames = request.form.getlist("uuid_filenames")
+    youtube_start_times = request.form.getlist("youtube_start_times")
+    youtube_end_times = request.form.getlist("youtube_end_times")
+
+    if len(original_filenames) != len(uuid_filenames):
+        raise BadRequest(description="Number of original filenames and uuid filenames are not equal")
+    
+    if len(original_filenames) != len(youtube_start_times):
+        raise BadRequest(description="Number of original filenames and youtube start times are not equal")
+    
+    if len(original_filenames) != len(youtube_end_times):
+        raise BadRequest(description="Number of original filenames and youtube end times are not equal")
+
+    if len(original_filenames) != len(reference_transcriptions):
+        raise BadRequest(description="Number of original filenames and reference transcriptions are not equal")
+
+    for original_filename, uuid_filename, youtube_start_time, youtube_end_time, reference_transcription\
+        in zip(original_filenames, uuid_filenames, youtube_start_times, youtube_end_times, reference_transcriptions):
+        extension = Path(original_filename).suffix.lower()
+
+        if len(extension) > 1 and extension[1:] not in ALLOWED_EXTENSIONS:
+            raise BadRequest(description="File format is not supported")
+
+        data = Data(
+            project_id=project.id,
+            filename=uuid_filename,
+            original_filename=original_filename,
+            reference_transcription=reference_transcription,
+            is_marked_for_review=False,
+            assigned_user_id=user.id,
+            youtube_start_time=youtube_start_time,
+            youtube_end_time=youtube_end_time,
+        )
+        db.session.add(data)
+        db.session.flush()
+
+        db.session.commit()
+        db.session.refresh(data)
+
+    return (
+        jsonify(
+            data_id=data.id,
+            message=f"Data uploaded, created and assigned successfully",
+            type="DATA_CREATED",
+        ),
+        201,
+    )
