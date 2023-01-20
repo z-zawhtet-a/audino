@@ -23,7 +23,7 @@
     "react-router-dom": "^5.1.2",
     "react-scripts": "3.4.1",
     "redux": "^4.0.5",
-    "wavesurfer.js": "^3.3.3",
+    "wavesurfer.js": "^5.2.0",
     "lodash": "4.17.21"
   },
   "proxy": "http://backend:5000",

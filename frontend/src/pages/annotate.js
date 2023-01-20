@@ -222,12 +222,13 @@ class Annotate extends React.Component {
     wavesurfer.on("region-out", () => {
       this.showSegmentTranscription(null);
     });
-    wavesurfer.on("region-play", (r) => {
-      r.once("out", () => {
-        wavesurfer.play(r.start);
-        wavesurfer.pause();
-      });
-    });
+
+    //wavesurfer.on("region-play", (r) => {
+    //  r.once("out", () => {
+    //    wavesurfer.play(r.start);
+    //    wavesurfer.pause();
+    //  });
+    //});
 
     wavesurfer.on("region-click", (r, e) => {
       e.stopPropagation();
@@ -235,7 +236,7 @@ class Annotate extends React.Component {
         isPlaying: true,
         selectedSegment: r,
       });
-      r.play();
+      wavesurfer.play(0);  // temp fix for region not playing to the end issue
     });
     wavesurfer.on("pause", (r, e) => {
       this.setState({ isPlaying: false });

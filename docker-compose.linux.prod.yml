@@ -65,7 +65,7 @@ volumes:
     driver_opts:
       o: bind
       type: none
-      device: ${HOME}/audino/uploads
+      device: /home/zawhtetaung/audino/uploads
   www:
 
 networks:
