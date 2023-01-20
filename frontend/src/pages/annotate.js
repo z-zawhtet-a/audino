@@ -1,5 +1,6 @@
 import axios from "axios";
 import React from "react";
+import HotKeys from "react-hot-keys";
 import { sortBy } from "lodash";
 import WaveSurfer from "wavesurfer.js";
 import RegionsPlugin from "wavesurfer.js/dist/plugin/wavesurfer.regions.min.js";
@@ -63,6 +64,7 @@ class Annotate extends React.Component {
       referenceTranscription: null,
       isMarkedForReview: false,
       selectedSegment: null,
+      isSegmentSaving: false,
       isSegmentDeleting: false,
       errorMessage: null,
       successMessage: null,
@@ -305,6 +307,68 @@ class Annotate extends React.Component {
       (region && region.data.transcription) || "–";
   }
 
+  onKeyUp(keyName, e, handle) {
+    e.preventDefault()
+  }
+
+  onKeyDown(keyName, e, handle) {
+    e.preventDefault()
+    switch (keyName) {
+      case "space":
+        if (this.state.isPlaying) {
+          this.handlePause();
+        } else {
+          this.handlePlay();
+        }
+        break;
+      case "ctrl+left":
+      case "command+left":
+        this.handleBackward();
+        break;
+      case "ctrl+right":
+      case "command+right":
+        this.handleForward();
+        break;
+      case "ctrl+shift+left":
+      case "command+shift+left":
+        this.handleBackward(1);
+        break;
+      case "ctrl+shift+right":
+      case "command+shift+right":
+        this.handleForward(1);
+        break;
+      case "ctrl+up":
+      case "command+up":
+        if (this.state.nextItemAvailable && !this.state.isSegmentSaving && !this.state.isSegmentDeleting) {
+          this.props.history.push(`/projects/${
+            this.state.projectId
+          }/data/${`${this.state.nextDataId}&${this.state.nextFileName}&${this.state.nextYoutubeStartTime}&${this.state.page}&${this.state.active}`}/annotate`)
+          window.location.reload(false);
+        }
+        break;
+      case "ctrl+down":
+      case "command+down":
+        if (!this.state.isSegmentSaving && !this.state.isSegmentDeleting) {
+          this.props.history.push(`/projects/${this.state.projectId}/data`)
+        }
+        break;
+      case "ctrl+s":
+      case "command+s":
+        if (!this.state.isSegmentSaving && !this.state.isSegmentDeleting) {
+          this.handleSegmentSave();
+        }
+        break;
+      case "ctrl+shift+s":
+      case "command+shift+s":
+        if (!this.state.isSegmentSaving && !this.state.isSegmentDeleting) {
+          this.handleSkipFile();
+        }
+        break;
+      default:
+        break;
+    }
+  }
+
   handlePlay() {
     const { wavesurfer } = this.state;
     this.setState({ isPlaying: true });
@@ -317,14 +381,16 @@ class Annotate extends React.Component {
     wavesurfer.pause();
   }
 
-  handleForward() {
+  handleForward(time=5) {
     const { wavesurfer } = this.state;
-    wavesurfer.skipForward(5);
+    wavesurfer.skipForward(time);
+    wavesurfer.pause();
   }
 
-  handleBackward() {
+  handleBackward(time=5) {
     const { wavesurfer } = this.state;
-    wavesurfer.skipBackward(5);
+    wavesurfer.skipBackward(time);
+    wavesurfer.pause();
   }
 
   handleZoom(e) {
@@ -591,8 +657,17 @@ class Annotate extends React.Component {
       nextItemAvailable,
     } = this.state;
 
+    const keyMap = "ctrl+s,command+s,ctrl+up,ctrl+down,ctrl+left,ctrl+right,\
+    ctrl+shift+left,ctrl+shift+right,command+shift+left,command+shift+right,\
+    command+up,command+down,command+left,command+right,\
+    ctrl+shift+s,command+shift+s,space"
+
     return (
-      <div>
+      <HotKeys
+        keyName={keyMap}
+        onKeyDown={this.onKeyDown.bind(this)}
+        onKeyUp={this.onKeyUp.bind(this)}
+      >
         <Helmet>
           <title>Annotate</title>
         </Helmet>
@@ -851,7 +926,7 @@ class Annotate extends React.Component {
             ) : null}
           </div>
         </div>
-      </div>
+      </HotKeys>
     );
   }
 }
