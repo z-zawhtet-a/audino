@@ -99,14 +99,13 @@ class Annotate extends React.Component {
         next_page: nextPage,
         prev_page: prevPage,
       } = response.data;
-      const sortedData = sortBy(data, (d) => {
-        const ext = d["original_filename"].split(".")[1];
-        const fname = d["original_filename"].split(".")[0].split("_");
-        const zeroPaddedFname = `${fname[0]}_${fname[1].padStart(
-          5,
-          "0"
-        )}.${ext}`;
-        return zeroPaddedFname;
+      const sortedData = sortBy(data, d => {
+        const ext = d['original_filename'].split('.')[1]
+        const temp = d['original_filename'].split('.')[0].split('_')
+        const fname = temp.slice(0, temp.length - 1)
+        const index = temp[temp.length - 1]
+        const zeroPaddedFname = `${fname.join("_")}_${index.padStart(5, '0')}.${ext}`
+        return zeroPaddedFname
       });
 
       const currentIdx = sortedData.findIndex(
@@ -132,14 +131,13 @@ class Annotate extends React.Component {
             prev_page,
           } = response.data;
 
-          const sortedData = sortBy(data, (d) => {
-            const ext = d["original_filename"].split(".")[1];
-            const fname = d["original_filename"].split(".")[0].split("_");
-            const zeroPaddedFname = `${fname[0]}_${fname[1].padStart(
-              5,
-              "0"
-            )}.${ext}`;
-            return zeroPaddedFname;
+          const sortedData = sortBy(data, d => {
+            const ext = d['original_filename'].split('.')[1]
+            const temp = d['original_filename'].split('.')[0].split('_')
+            const fname = temp.slice(0, temp.length - 1)
+            const index = temp[temp.length - 1]
+            const zeroPaddedFname = `${fname.join("_")}_${index.padStart(5, '0')}.${ext}`
+            return zeroPaddedFname
           });
 
           this.setState({
