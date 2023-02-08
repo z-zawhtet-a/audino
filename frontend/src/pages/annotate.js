@@ -69,7 +69,12 @@ class Annotate extends React.Component {
       errorMessage: null,
       successMessage: null,
       youtubeStartTime,
+      previousItemAvailable: false,
       nextItemAvailable: false,
+      previousItemPage: null,
+      previousDataId: null,
+      previousFileName: null,
+      previousYoutubeStartTime: null,
       nextDataId: null,
       nextFileName: null,
       nextYoutubeStartTime: null,
@@ -112,7 +117,9 @@ class Annotate extends React.Component {
         (d) => d["data_id"] === this.state.dataId
       );
 
+      // end of the page or cannot find the data
       if (currentIdx === -1 || currentIdx === sortedData.length - 1) {
+        // if there is a next page, load the next page
         if (nextPage) {
           this.setState({ isDataLoading: true });
           url = `${apiUrl}?page=${page + 1}&active=${active}`;
@@ -148,37 +155,135 @@ class Annotate extends React.Component {
             nextPage: next_page,
             prevPage: prev_page,
             isDataLoading: false,
+            // set the previous item to the second last item of the current page
+            previousItemPage: prev_page, // this is the page of the previous item
+            previousDataId: sortedData[sortedData.length - 2]["data_id"],
+            previousFileName: sortedData[sortedData.length - 2]["original_filename"],
+            previousYoutubeStartTime: sortedData[sortedData.length - 2]["youtube_start_time"],
+            previousItemAvailable: true,
+            // set the next item to the first item of the next page
             nextDataId: sortedData[0]["data_id"],
             nextFileName: sortedData[0]["original_filename"],
             nextYoutubeStartTime: sortedData[0]["youtube_start_time"],
             nextItemAvailable: true,
           });
+        // if there is no next page, set the next item to null
         } else {
           this.setState({
+            data: sortedData,
+            count,
+            active: activeS,
+            page: pageS,
+            isDataLoading: false,
             nextPage: null,
             nextDataId: null,
             nextFileName: null,
             nextYoutubeStartTime: null,
             nextItemAvailable: false,
+            // set the previous item to the second last item of the current page
+            previousItemPage: page, // this is the page of the previous item
+            previousDataId: sortedData[sortedData.length - 2]["data_id"],
+            previousFileName: sortedData[sortedData.length - 2]["original_filename"],
+            previousYoutubeStartTime: sortedData[sortedData.length - 2]["youtube_start_time"],
+            previousItemAvailable: true,
           });
         }
-      } else {
-        const nextRandomData = sortedData[currentIdx + 1];
+      // if the current item is the first item of the page
+      } else if (currentIdx === 0) {
+          // if there is a previous page, load the previous page
+          if (prevPage) {
+            this.setState({ isDataLoading: true });
+            url = `${apiUrl}?page=${page - 1}&active=${active}`;
 
-        this.setState({
-          data,
-          count,
-          active: activeS,
-          page: pageS,
-          nextPage: nextPage,
-          prevPage: prevPage,
-          isDataLoading: false,
-          nextDataId: nextRandomData["data_id"],
-          nextFileName: nextRandomData["original_filename"],
-          nextYoutubeStartTime: nextRandomData["youtube_start_time"],
-          nextItemAvailable: true,
-        });
-      }
+            const response = await axios({
+              method: "get",
+              url,
+            });
+
+            const {
+              data,
+            } = response.data;
+            
+            const sortedDataPrev = sortBy(data, d => {
+              const ext = d['original_filename'].split('.')[1]
+              const temp = d['original_filename'].split('.')[0].split('_')
+              const fname = temp.slice(0, temp.length - 1)
+              const index = temp[temp.length - 1]
+              const zeroPaddedFname = `${fname.join("_")}_${index.padStart(5, '0')}.${ext}`
+              return zeroPaddedFname
+            });
+
+            // set the next item to the second item of the current page
+            const nextData = sortedData[currentIdx + 1];
+
+            this.setState({
+              isDataLoading: false,
+              // set the previous item to the second last item of the current page
+              previousItemPage: page - 1, // this is the page of the previous item
+              previousDataId: sortedDataPrev[sortedData.length - 1]["data_id"],
+              previousFileName: sortedDataPrev[sortedData.length - 1]["original_filename"],
+              previousYoutubeStartTime: sortedDataPrev[sortedData.length - 1]["youtube_start_time"],
+              previousItemAvailable: true,
+              data,
+              count,
+              active: activeS,
+              page: pageS,
+              nextPage: nextPage,
+              prevPage: prevPage,
+              nextDataId: nextData["data_id"],
+              nextFileName: nextData["original_filename"],
+              nextYoutubeStartTime: nextData["youtube_start_time"],
+              nextItemAvailable: true,
+            });
+          // if this is the first item of the first page, set the previous item to null
+          } else {
+
+            // set the next item to the second item of the current page
+            const nextData = sortedData[currentIdx + 1];
+
+            this.setState({
+              previousItemAvailable: false,
+              previousItemPage: null,
+              previousDataId: null,
+              previousFileName: null,
+              previousYoutubeStartTime: null,
+              data,
+              count,
+              active: activeS,
+              page: pageS,
+              nextPage: nextPage,
+              prevPage: prevPage,
+              nextDataId: nextData["data_id"],
+              nextFileName: nextData["original_filename"],
+              nextYoutubeStartTime: nextData["youtube_start_time"],
+              nextItemAvailable: true,
+            });
+          }
+        // if the current item is neither the first nor the last item of the page
+        } else {
+
+          const nextData = sortedData[currentIdx + 1];
+          const prevData = sortedData[currentIdx - 1];
+
+          this.setState({
+            data,
+            count,
+            active: activeS,
+            page: pageS,
+            nextPage: nextPage,
+            prevPage: prevPage,
+            isDataLoading: false,
+            nextDataId: nextData["data_id"],
+            nextFileName: nextData["original_filename"],
+            nextYoutubeStartTime: nextData["youtube_start_time"],
+            nextItemAvailable: true,
+            previousItemPage: page, // this is the page of the previous item
+            previousDataId: prevData["data_id"],
+            previousFileName: prevData["original_filename"],
+            previousYoutubeStartTime: prevData["youtube_start_time"],
+            previousItemAvailable: true,
+          });
+        }
     } catch (error) {
       this.setState({
         errorMessage: error.message,
@@ -346,8 +451,11 @@ class Annotate extends React.Component {
         break;
       case "ctrl+down":
       case "command+down":
-        if (!this.state.isSegmentSaving && !this.state.isSegmentDeleting) {
-          this.props.history.push(`/projects/${this.state.projectId}/data`)
+        if (this.state.previousItemAvailable && !this.state.isSegmentSaving && !this.state.isSegmentDeleting) {
+          this.props.history.push(`/projects/${
+            this.state.projectId
+          }/data/${`${this.state.previousDataId}&${this.state.previousFileName}&${this.state.previousYoutubeStartTime}&${this.state.previousItemPage}&${this.state.active}`}/annotate`)
+          window.location.reload(false);
         }
         break;
       case "ctrl+s":
@@ -653,6 +761,7 @@ class Annotate extends React.Component {
       errorMessage,
       successMessage,
       nextItemAvailable,
+      prevItemAvailable,
     } = this.state;
 
     const keyMap = "ctrl+s,command+s,ctrl+up,ctrl+down,ctrl+left,ctrl+right,\
@@ -851,14 +960,25 @@ class Annotate extends React.Component {
                         />
                       </div>
                       <div className="col-2">
-                        <a href={`/projects/${this.state.projectId}/data`}>
+                        {/* <a href={`/projects/${this.state.projectId}/data`}>
                           <Button
                             size="lg"
                             type="primary"
                             disabled={isSegmentSaving}
                             text="Back to files"
                           />
-                        </a>
+                        </a> */}
+                        {!isSegmentSaving && prevItemAvailable ? (
+                          <a
+                            href={`/projects/${
+                              this.state.projectId
+                            }/data/${`${this.state.previousDataId}&${this.state.previousFileName}&${this.state.previousYoutubeStartTime}&${this.state.previousItemPage}&${this.state.active}`}/annotate`}
+                          >
+                            <Button size="lg" type="primary" text="Back" />
+                          </a>
+                        ) : (
+                          <Button size="lg" type="danger" text="START" isDisabled={true} />
+                        )}
                       </div>
                       <div className="col-2">
                         <Button
