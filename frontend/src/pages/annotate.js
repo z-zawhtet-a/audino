@@ -761,7 +761,7 @@ class Annotate extends React.Component {
       errorMessage,
       successMessage,
       nextItemAvailable,
-      prevItemAvailable,
+      previousItemAvailable,
     } = this.state;
 
     const keyMap = "ctrl+s,command+s,ctrl+up,ctrl+down,ctrl+left,ctrl+right,\
@@ -968,7 +968,7 @@ class Annotate extends React.Component {
                             text="Back to files"
                           />
                         </a> */}
-                        {!isSegmentSaving && prevItemAvailable ? (
+                        {!isSegmentSaving && previousItemAvailable ? (
                           <a
                             href={`/projects/${
                               this.state.projectId
