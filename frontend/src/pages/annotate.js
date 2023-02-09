@@ -72,6 +72,7 @@ class Annotate extends React.Component {
       previousItemAvailable: false,
       nextItemAvailable: false,
       previousItemPage: null,
+      nextItemPage: null,
       previousDataId: null,
       previousFileName: null,
       previousYoutubeStartTime: null,
@@ -131,14 +132,9 @@ class Annotate extends React.Component {
 
           const {
             data,
-            count,
-            active: activeS,
-            page: pageS,
-            next_page,
-            prev_page,
           } = response.data;
 
-          const sortedData = sortBy(data, d => {
+          const sortedDataNext = sortBy(data, d => {
             const ext = d['original_filename'].split('.')[1]
             const temp = d['original_filename'].split('.')[0].split('_')
             const fname = temp.slice(0, temp.length - 1)
@@ -152,19 +148,20 @@ class Annotate extends React.Component {
             count,
             active: activeS,
             page: pageS,
-            nextPage: next_page,
-            prevPage: prev_page,
+            nextPage: nextPage,
+            prevPage: prevPage,
             isDataLoading: false,
             // set the previous item to the second last item of the current page
-            previousItemPage: prev_page, // this is the page of the previous item
+            previousItemPage: pageS, // this is the page of the previous item
+            nextItemPage: pageS + 1, // this is the page of the next item
             previousDataId: sortedData[sortedData.length - 2]["data_id"],
             previousFileName: sortedData[sortedData.length - 2]["original_filename"],
             previousYoutubeStartTime: sortedData[sortedData.length - 2]["youtube_start_time"],
             previousItemAvailable: true,
             // set the next item to the first item of the next page
-            nextDataId: sortedData[0]["data_id"],
-            nextFileName: sortedData[0]["original_filename"],
-            nextYoutubeStartTime: sortedData[0]["youtube_start_time"],
+            nextDataId: sortedDataNext[0]["data_id"],
+            nextFileName: sortedDataNext[0]["original_filename"],
+            nextYoutubeStartTime: sortedDataNext[0]["youtube_start_time"],
             nextItemAvailable: true,
           });
         // if there is no next page, set the next item to null
@@ -178,6 +175,7 @@ class Annotate extends React.Component {
             nextPage: null,
             nextDataId: null,
             nextFileName: null,
+            nextItemPage: null,
             nextYoutubeStartTime: null,
             nextItemAvailable: false,
             // set the previous item to the second last item of the current page
@@ -220,9 +218,9 @@ class Annotate extends React.Component {
               isDataLoading: false,
               // set the previous item to the second last item of the current page
               previousItemPage: page - 1, // this is the page of the previous item
-              previousDataId: sortedDataPrev[sortedData.length - 1]["data_id"],
-              previousFileName: sortedDataPrev[sortedData.length - 1]["original_filename"],
-              previousYoutubeStartTime: sortedDataPrev[sortedData.length - 1]["youtube_start_time"],
+              previousDataId: sortedDataPrev[sortedDataPrev.length - 1]["data_id"],
+              previousFileName: sortedDataPrev[sortedDataPrev.length - 1]["original_filename"],
+              previousYoutubeStartTime: sortedDataPrev[sortedDataPrev.length - 1]["youtube_start_time"],
               previousItemAvailable: true,
               data,
               count,
@@ -230,6 +228,7 @@ class Annotate extends React.Component {
               page: pageS,
               nextPage: nextPage,
               prevPage: prevPage,
+              nextItemPage: pageS, // this is the page of the next item
               nextDataId: nextData["data_id"],
               nextFileName: nextData["original_filename"],
               nextYoutubeStartTime: nextData["youtube_start_time"],
@@ -253,6 +252,7 @@ class Annotate extends React.Component {
               page: pageS,
               nextPage: nextPage,
               prevPage: prevPage,
+              nextItemPage: pageS, // this is the page of the next item
               nextDataId: nextData["data_id"],
               nextFileName: nextData["original_filename"],
               nextYoutubeStartTime: nextData["youtube_start_time"],
@@ -273,6 +273,7 @@ class Annotate extends React.Component {
             nextPage: nextPage,
             prevPage: prevPage,
             isDataLoading: false,
+            nextItemPage: pageS, // this is the page of the next item
             nextDataId: nextData["data_id"],
             nextFileName: nextData["original_filename"],
             nextYoutubeStartTime: nextData["youtube_start_time"],
@@ -445,7 +446,7 @@ class Annotate extends React.Component {
         if (this.state.nextItemAvailable && !this.state.isSegmentSaving && !this.state.isSegmentDeleting) {
           this.props.history.push(`/projects/${
             this.state.projectId
-          }/data/${`${this.state.nextDataId}&${this.state.nextFileName}&${this.state.nextYoutubeStartTime}&${this.state.page}&${this.state.active}`}/annotate`)
+          }/data/${`${this.state.nextDataId}&${this.state.nextFileName}&${this.state.nextYoutubeStartTime}&${this.state.nextItemPage}&${this.state.active}`}/annotate`)
           window.location.reload(false);
         }
         break;
@@ -598,7 +599,7 @@ class Annotate extends React.Component {
           if (nextItemAvailable) {
             this.props.history.push(`/projects/${
               this.state.projectId
-            }/data/${`${this.state.nextDataId}&${this.state.nextFileName}&${this.state.nextYoutubeStartTime}&${this.state.page}&${this.state.active}`}/annotate`)
+            }/data/${`${this.state.nextDataId}&${this.state.nextFileName}&${this.state.nextYoutubeStartTime}&${this.state.nextItemPage}&${this.state.active}`}/annotate`)
             window.location.reload(false);
           }
         })
@@ -631,7 +632,7 @@ class Annotate extends React.Component {
           if (nextItemAvailable) {
             this.props.history.push(`/projects/${
               this.state.projectId
-            }/data/${`${this.state.nextDataId}&${this.state.nextFileName}&${this.state.nextYoutubeStartTime}&${this.state.page}&${this.state.active}`}/annotate`)
+            }/data/${`${this.state.nextDataId}&${this.state.nextFileName}&${this.state.nextYoutubeStartTime}&${this.state.nextItemPage}&${this.state.active}`}/annotate`)
             window.location.reload(false);
           }
         })
@@ -995,7 +996,7 @@ class Annotate extends React.Component {
                           <a
                             href={`/projects/${
                               this.state.projectId
-                            }/data/${`${this.state.nextDataId}&${this.state.nextFileName}&${this.state.nextYoutubeStartTime}&${this.state.page}&${this.state.active}`}/annotate`}
+                            }/data/${`${this.state.nextDataId}&${this.state.nextFileName}&${this.state.nextYoutubeStartTime}&${this.state.nextItemPage}&${this.state.active}`}/annotate`}
                           >
                             <Button size="lg" type="primary" text="Next" />
                           </a>
