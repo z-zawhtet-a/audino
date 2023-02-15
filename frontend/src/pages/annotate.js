@@ -118,6 +118,9 @@ class Annotate extends React.Component {
         (d) => d["data_id"] === this.state.dataId
       );
 
+      // update the current page
+      localStorage.setItem(`${activeS}:page`, pageS);
+
       // end of the page or cannot find the data
       if (currentIdx === -1 || currentIdx === sortedData.length - 1) {
         // if there is a next page, load the next page
@@ -390,6 +393,11 @@ class Annotate extends React.Component {
         this.setState({ wavesurfer });
 
         this.loadRegions(regions);
+        if (regions.length > 0) {
+          this.setState({
+            selectedSegment: wavesurfer.regions.list[Object.keys(wavesurfer.regions.list)[0]],
+          })
+        }
       })
       .catch((error) => {
         console.log(error);

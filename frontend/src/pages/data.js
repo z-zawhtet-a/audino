@@ -18,8 +18,11 @@ class Data extends React.Component {
       projectId,
       data: [],
       filterKeyword: params.get("search") || "",
-      active: params.get("active") || "pending",
-      page: params.get("page") || 1,
+      active: params.get("active") || "all",
+      page:
+        params.get("page") ||
+        localStorage.getItem(`${params.get("active") || "all"}:page`) ||
+        1,
       count: {
         pending: 0,
         completed: 0,
@@ -28,19 +31,54 @@ class Data extends React.Component {
       },
       apiUrl: `/api/current_user/projects/${projectId}/data`,
       tabUrls: {
-        pending: this.prepareUrl(projectId, 1, "pending", params.get("search") || ""),
-        completed: this.prepareUrl(projectId, 1, "completed", params.get("search") || ""),
-        all: this.prepareUrl(projectId, 1, "all", params.get("search") || ""),
-        marked_review: this.prepareUrl(projectId, 1, "marked_review", params.get("search") || ""),
+        pending: this.prepareUrl(
+          projectId,
+          localStorage.getItem("pending:page") || 1,
+          "pending",
+          params.get("search") || ""
+        ),
+        completed: this.prepareUrl(
+          projectId,
+          localStorage.getItem("completed:page") || 1,
+          "completed",
+          params.get("search") || ""
+        ),
+        all: this.prepareUrl(
+          projectId,
+          localStorage.getItem("all:page") || 1,
+          "all",
+          params.get("search") || ""
+        ),
+        marked_review: this.prepareUrl(
+          projectId,
+          localStorage.getItem("marked_review:page") || 1,
+          "marked_review",
+          params.get("search") || ""
+        ),
       },
       nextPage: null,
       prevPage: null,
       isDataLoading: false,
+      goToPage: "",
     };
   }
 
   prepareUrl(projectId, page, active, searchKeyword) {
     return `/projects/${projectId}/data?page=${page}&active=${active}&search=${searchKeyword}`;
+  }
+
+  handlePageChange(event) {
+    if (event.key === "Enter") {
+      const { projectId, active, filterKeyword, goToPage } = this.state;
+      const newPageUrl = this.prepareUrl(
+        projectId,
+        goToPage,
+        active,
+        filterKeyword
+      );
+      this.props.history.push(newPageUrl);
+      window.location.reload();
+    }
   }
 
   componentDidMount() {
@@ -55,23 +93,42 @@ class Data extends React.Component {
       .then((response) => {
         const { data, count, active, page, next_page, prev_page } =
           response.data;
-        const sortedData = sortBy(data, d => {
-          const ext = d['original_filename'].split('.')[1]
-          const temp = d['original_filename'].split('.')[0].split('_')
-          const fname = temp.slice(0, temp.length - 1)
-          const index = temp[temp.length - 1]
-          const zeroPaddedFname = `${fname.join("_")}_${index.padStart(5, '0')}.${ext}`
-          return zeroPaddedFname
+        const sortedData = sortBy(data, (d) => {
+          const ext = d["original_filename"].split(".")[1];
+          const temp = d["original_filename"].split(".")[0].split("_");
+          const fname = temp.slice(0, temp.length - 1);
+          const index = temp[temp.length - 1];
+          const zeroPaddedFname = `${fname.join("_")}_${index.padStart(
+            5,
+            "0"
+          )}.${ext}`;
+          return zeroPaddedFname;
         });
-        this.setState({
-          data: sortedData,
-          count,
-          active,
-          page,
-          nextPage: next_page,
-          prevPage: prev_page,
-          isDataLoading: false,
-        });
+        // If there is no data, set page to 1
+        if (sortedData.length === 0) {
+          localStorage.setItem(`${this.state.active}:page`, 1);
+          this.setState({
+            data: sortedData,
+            count,
+            active,
+            page,
+            nextPage: next_page,
+            prevPage: prev_page,
+            isDataLoading: false,
+          });
+        } else {
+          this.setState({
+            data: sortedData,
+            count,
+            active,
+            page,
+            nextPage: next_page,
+            prevPage: prev_page,
+            isDataLoading: false,
+          });
+
+          localStorage.setItem(`${active}:page`, page);
+        }
       })
       .catch((error) => {
         this.setState({
@@ -93,10 +150,21 @@ class Data extends React.Component {
       prevPage,
       tabUrls,
       filterKeyword,
+      goToPage,
     } = this.state;
 
-    const nextPageUrl = this.prepareUrl(projectId, nextPage, active, filterKeyword);
-    const prevPageUrl = this.prepareUrl(projectId, prevPage, active, filterKeyword);
+    const nextPageUrl = this.prepareUrl(
+      projectId,
+      nextPage,
+      active,
+      filterKeyword
+    );
+    const prevPageUrl = this.prepareUrl(
+      projectId,
+      prevPage,
+      active,
+      filterKeyword
+    );
 
     return (
       <div>
@@ -114,6 +182,16 @@ class Data extends React.Component {
               <div>
                 <div className="col justify-content-left my-3">
                   <ul className="nav nav-pills nav-fill">
+                    <li className="nav-item">
+                      <a
+                        className={`nav-link ${
+                          active === "all" ? "active" : null
+                        }`}
+                        href={tabUrls["all"]}
+                      >
+                        All ({count["all"]})
+                      </a>
+                    </li>
                     <li className="nav-item">
                       {/*  See: https://github.com/ReactTraining/react-router/issues/7293 */}
                       <a
@@ -133,16 +211,6 @@ class Data extends React.Component {
                         href={tabUrls["completed"]}
                       >
                         Annotated ({count["completed"]})
-                      </a>
-                    </li>
-                    <li className="nav-item">
-                      <a
-                        className={`nav-link ${
-                          active === "all" ? "active" : null
-                        }`}
-                        href={tabUrls["all"]}
-                      >
-                        All ({count["all"]})
                       </a>
                     </li>
                     <li className="nav-item">
@@ -171,21 +239,36 @@ class Data extends React.Component {
                             </a>
                           ) : null}
 
-                          {data.length !== 0 ? <span className="col">{page}</span> : null}
+                          {data.length !== 0 ? (
+                            <span className="col">{page}/{Math.ceil(count[active]/100)}</span>
+                          ) : null}
                           {nextPage ? (
                             <a className="col" href={nextPageUrl}>
                               Next
                             </a>
                           ) : null}
+                          <hr />
+                          <div className="col">
+                            <span>Go To Page: </span>
+                            <input
+                              type="text"
+                              style={{ textAlign: "center" }}
+                              value={goToPage}
+                              onChange={(e) =>
+                                this.setState({ goToPage: e.target.value })
+                              }
+                              onKeyDown={(e) => this.handlePageChange(e)}
+                            ></input>
+                          </div>
                         </div>
-                        <input
+                        {/* <input
                           value={this.state.filterKeyword}
                           onChange={(e) =>
                             this.setState({ filterKeyword: e.target.value })
                           }
                           type="text"
                           placeholder="Filter.."
-                        ></input>
+                        ></input> */}
                       </tr>
                     </thead>
                     <tbody>
