@@ -8,9 +8,9 @@ services:
     environment:
       ADMIN_USERNAME: "admin"
       ADMIN_PASSWORD: "whisper_admin_dninja"
-      DATABASE_URL: "mysql+pymysql://audino:audino@mysql/audino?charset=utf8mb4"
+      DATABASE_URL: "mysql+pymysql://audino:audino@mysql-diarization/audino?charset=utf8mb4"
       JWT_SECRET_KEY: "secretkey"
-      JWT_REDIS_STORE_URL: "redis://:audino@redis:6379/0"
+      JWT_REDIS_STORE_URL: "redis://:audino@redis-diarization:6379/0"
     depends_on:
       - mysql-diarization
       - redis-diarization
