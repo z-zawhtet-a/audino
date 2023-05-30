@@ -27,7 +27,7 @@
     "redux": "^4.0.5",
     "wavesurfer.js": "^5.2.0"
   },
-  "proxy": "http://backend:5000",
+  "proxy": "http://backend-diarization:5000",
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
