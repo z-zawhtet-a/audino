@@ -167,7 +167,7 @@ class Annotate extends React.Component {
             nextYoutubeStartTime: sortedDataNext[0]["youtube_start_time"],
             nextItemAvailable: true,
           });
-        // if there is no next page, set the next item to null
+          // if there is no next page, set the next item to null
         } else {
           this.setState({
             data: sortedData,
@@ -189,105 +189,105 @@ class Annotate extends React.Component {
             previousItemAvailable: true,
           });
         }
-      // if the current item is the first item of the page
+        // if the current item is the first item of the page
       } else if (currentIdx === 0) {
-          // if there is a previous page, load the previous page
-          if (prevPage) {
-            this.setState({ isDataLoading: true });
-            url = `${apiUrl}?page=${page - 1}&active=${active}`;
+        // if there is a previous page, load the previous page
+        if (prevPage) {
+          this.setState({ isDataLoading: true });
+          url = `${apiUrl}?page=${page - 1}&active=${active}`;
 
-            const response = await axios({
-              method: "get",
-              url,
-            });
+          const response = await axios({
+            method: "get",
+            url,
+          });
 
-            const {
-              data,
-            } = response.data;
-            
-            const sortedDataPrev = sortBy(data, d => {
-              const ext = d['original_filename'].split('.')[1]
-              const temp = d['original_filename'].split('.')[0].split('_')
-              const fname = temp.slice(0, temp.length - 1)
-              const index = temp[temp.length - 1]
-              const zeroPaddedFname = `${fname.join("_")}_${index.padStart(5, '0')}.${ext}`
-              return zeroPaddedFname
-            });
+          const {
+            data,
+          } = response.data;
 
-            // set the next item to the second item of the current page
-            const nextData = sortedData[currentIdx + 1];
+          const sortedDataPrev = sortBy(data, d => {
+            const ext = d['original_filename'].split('.')[1]
+            const temp = d['original_filename'].split('.')[0].split('_')
+            const fname = temp.slice(0, temp.length - 1)
+            const index = temp[temp.length - 1]
+            const zeroPaddedFname = `${fname.join("_")}_${index.padStart(5, '0')}.${ext}`
+            return zeroPaddedFname
+          });
 
-            this.setState({
-              isDataLoading: false,
-              // set the previous item to the second last item of the current page
-              previousItemPage: page - 1, // this is the page of the previous item
-              previousDataId: sortedDataPrev[sortedDataPrev.length - 1]["data_id"],
-              previousFileName: sortedDataPrev[sortedDataPrev.length - 1]["original_filename"],
-              previousYoutubeStartTime: sortedDataPrev[sortedDataPrev.length - 1]["youtube_start_time"],
-              previousItemAvailable: true,
-              data,
-              count,
-              active: activeS,
-              page: pageS,
-              nextPage: nextPage,
-              prevPage: prevPage,
-              nextItemPage: pageS, // this is the page of the next item
-              nextDataId: nextData["data_id"],
-              nextFileName: nextData["original_filename"],
-              nextYoutubeStartTime: nextData["youtube_start_time"],
-              nextItemAvailable: true,
-            });
-          // if this is the first item of the first page, set the previous item to null
-          } else {
-
-            // set the next item to the second item of the current page
-            const nextData = sortedData[currentIdx + 1];
-
-            this.setState({
-              previousItemAvailable: false,
-              previousItemPage: null,
-              previousDataId: null,
-              previousFileName: null,
-              previousYoutubeStartTime: null,
-              data,
-              count,
-              active: activeS,
-              page: pageS,
-              nextPage: nextPage,
-              prevPage: prevPage,
-              nextItemPage: pageS, // this is the page of the next item
-              nextDataId: nextData["data_id"],
-              nextFileName: nextData["original_filename"],
-              nextYoutubeStartTime: nextData["youtube_start_time"],
-              nextItemAvailable: true,
-            });
-          }
-        // if the current item is neither the first nor the last item of the page
-        } else {
-
+          // set the next item to the second item of the current page
           const nextData = sortedData[currentIdx + 1];
-          const prevData = sortedData[currentIdx - 1];
 
           this.setState({
+            isDataLoading: false,
+            // set the previous item to the second last item of the current page
+            previousItemPage: page - 1, // this is the page of the previous item
+            previousDataId: sortedDataPrev[sortedDataPrev.length - 1]["data_id"],
+            previousFileName: sortedDataPrev[sortedDataPrev.length - 1]["original_filename"],
+            previousYoutubeStartTime: sortedDataPrev[sortedDataPrev.length - 1]["youtube_start_time"],
+            previousItemAvailable: true,
             data,
             count,
             active: activeS,
             page: pageS,
             nextPage: nextPage,
             prevPage: prevPage,
-            isDataLoading: false,
             nextItemPage: pageS, // this is the page of the next item
             nextDataId: nextData["data_id"],
             nextFileName: nextData["original_filename"],
             nextYoutubeStartTime: nextData["youtube_start_time"],
             nextItemAvailable: true,
-            previousItemPage: page, // this is the page of the previous item
-            previousDataId: prevData["data_id"],
-            previousFileName: prevData["original_filename"],
-            previousYoutubeStartTime: prevData["youtube_start_time"],
-            previousItemAvailable: true,
+          });
+          // if this is the first item of the first page, set the previous item to null
+        } else {
+
+          // set the next item to the second item of the current page
+          const nextData = sortedData[currentIdx + 1];
+
+          this.setState({
+            previousItemAvailable: false,
+            previousItemPage: null,
+            previousDataId: null,
+            previousFileName: null,
+            previousYoutubeStartTime: null,
+            data,
+            count,
+            active: activeS,
+            page: pageS,
+            nextPage: nextPage,
+            prevPage: prevPage,
+            nextItemPage: pageS, // this is the page of the next item
+            nextDataId: nextData["data_id"],
+            nextFileName: nextData["original_filename"],
+            nextYoutubeStartTime: nextData["youtube_start_time"],
+            nextItemAvailable: true,
           });
         }
+        // if the current item is neither the first nor the last item of the page
+      } else {
+
+        const nextData = sortedData[currentIdx + 1];
+        const prevData = sortedData[currentIdx - 1];
+
+        this.setState({
+          data,
+          count,
+          active: activeS,
+          page: pageS,
+          nextPage: nextPage,
+          prevPage: prevPage,
+          isDataLoading: false,
+          nextItemPage: pageS, // this is the page of the next item
+          nextDataId: nextData["data_id"],
+          nextFileName: nextData["original_filename"],
+          nextYoutubeStartTime: nextData["youtube_start_time"],
+          nextItemAvailable: true,
+          previousItemPage: page, // this is the page of the previous item
+          previousDataId: prevData["data_id"],
+          previousFileName: prevData["original_filename"],
+          previousYoutubeStartTime: prevData["youtube_start_time"],
+          previousItemAvailable: true,
+        });
+      }
     } catch (error) {
       this.setState({
         errorMessage: error.message,
@@ -332,12 +332,12 @@ class Annotate extends React.Component {
       this.showSegmentTranscription(null);
     });
 
-    //wavesurfer.on("region-play", (r) => {
-    //  r.once("out", () => {
-    //    wavesurfer.play(r.start);
-    //    wavesurfer.pause();
-    //  });
-    //});
+    wavesurfer.on("region-play", (r) => {
+      r.once("out", () => {
+        wavesurfer.play(r.start);
+        wavesurfer.pause();
+      });
+    });
 
     wavesurfer.on("region-click", (r, e) => {
       e.stopPropagation();
@@ -345,7 +345,11 @@ class Annotate extends React.Component {
         isPlaying: true,
         selectedSegment: r,
       });
-      wavesurfer.play(0);  // temp fix for region not playing to the end issue
+      r.once("out", () => {
+        wavesurfer.play(r.start);
+        wavesurfer.pause();
+      });
+      wavesurfer.play(r.start);  // temp fix for region not playing to the end issue
     });
     wavesurfer.on("pause", (r, e) => {
       this.setState({ isPlaying: false });
@@ -452,18 +456,16 @@ class Annotate extends React.Component {
       case "ctrl+up":
       case "command+up":
         if (this.state.nextItemAvailable && !this.state.isSegmentSaving && !this.state.isSegmentDeleting) {
-          this.props.history.push(`/projects/${
-            this.state.projectId
-          }/data/${`${this.state.nextDataId}&${this.state.nextFileName}&${this.state.nextYoutubeStartTime}&${this.state.nextItemPage}&${this.state.active}`}/annotate`)
+          this.props.history.push(`/projects/${this.state.projectId
+            }/data/${`${this.state.nextDataId}&${this.state.nextFileName}&${this.state.nextYoutubeStartTime}&${this.state.nextItemPage}&${this.state.active}`}/annotate`)
           window.location.reload(false);
         }
         break;
       case "ctrl+down":
       case "command+down":
         if (this.state.previousItemAvailable && !this.state.isSegmentSaving && !this.state.isSegmentDeleting) {
-          this.props.history.push(`/projects/${
-            this.state.projectId
-          }/data/${`${this.state.previousDataId}&${this.state.previousFileName}&${this.state.previousYoutubeStartTime}&${this.state.previousItemPage}&${this.state.active}`}/annotate`)
+          this.props.history.push(`/projects/${this.state.projectId
+            }/data/${`${this.state.previousDataId}&${this.state.previousFileName}&${this.state.previousYoutubeStartTime}&${this.state.previousItemPage}&${this.state.active}`}/annotate`)
           window.location.reload(false);
         }
         break;
@@ -496,13 +498,13 @@ class Annotate extends React.Component {
     wavesurfer.pause();
   }
 
-  handleForward(time=5) {
+  handleForward(time = 5) {
     const { wavesurfer } = this.state;
     wavesurfer.skipForward(time);
     wavesurfer.pause();
   }
 
-  handleBackward(time=5) {
+  handleBackward(time = 5) {
     const { wavesurfer } = this.state;
     wavesurfer.skipBackward(time);
     wavesurfer.pause();
@@ -605,9 +607,8 @@ class Annotate extends React.Component {
             errorMessage: null,
           });
           if (nextItemAvailable) {
-            this.props.history.push(`/projects/${
-              this.state.projectId
-            }/data/${`${this.state.nextDataId}&${this.state.nextFileName}&${this.state.nextYoutubeStartTime}&${this.state.nextItemPage}&${this.state.active}`}/annotate`)
+            this.props.history.push(`/projects/${this.state.projectId
+              }/data/${`${this.state.nextDataId}&${this.state.nextFileName}&${this.state.nextYoutubeStartTime}&${this.state.nextItemPage}&${this.state.active}`}/annotate`)
             window.location.reload(false);
           }
         })
@@ -638,9 +639,8 @@ class Annotate extends React.Component {
           });
 
           if (nextItemAvailable) {
-            this.props.history.push(`/projects/${
-              this.state.projectId
-            }/data/${`${this.state.nextDataId}&${this.state.nextFileName}&${this.state.nextYoutubeStartTime}&${this.state.nextItemPage}&${this.state.active}`}/annotate`)
+            this.props.history.push(`/projects/${this.state.projectId
+              }/data/${`${this.state.nextDataId}&${this.state.nextFileName}&${this.state.nextYoutubeStartTime}&${this.state.nextItemPage}&${this.state.active}`}/annotate`)
             window.location.reload(false);
           }
         })
@@ -932,7 +932,7 @@ class Annotate extends React.Component {
                                   selectedSegment.data.annotations &&
                                   selectedSegment.data.annotations[key] &&
                                   selectedSegment.data.annotations[key][
-                                    "values"
+                                  "values"
                                   ]) ||
                                 (value["type"] === "multiselect" ? [] : "")
                               }
@@ -979,9 +979,8 @@ class Annotate extends React.Component {
                         </a> */}
                         {!isSegmentSaving && previousItemAvailable ? (
                           <a
-                            href={`/projects/${
-                              this.state.projectId
-                            }/data/${`${this.state.previousDataId}&${this.state.previousFileName}&${this.state.previousYoutubeStartTime}&${this.state.previousItemPage}&${this.state.active}`}/annotate`}
+                            href={`/projects/${this.state.projectId
+                              }/data/${`${this.state.previousDataId}&${this.state.previousFileName}&${this.state.previousYoutubeStartTime}&${this.state.previousItemPage}&${this.state.active}`}/annotate`}
                           >
                             <Button size="lg" type="primary" text="Back" />
                           </a>
@@ -1002,9 +1001,8 @@ class Annotate extends React.Component {
                       <div className="col-2">
                         {!isSegmentSaving && nextItemAvailable ? (
                           <a
-                            href={`/projects/${
-                              this.state.projectId
-                            }/data/${`${this.state.nextDataId}&${this.state.nextFileName}&${this.state.nextYoutubeStartTime}&${this.state.nextItemPage}&${this.state.active}`}/annotate`}
+                            href={`/projects/${this.state.projectId
+                              }/data/${`${this.state.nextDataId}&${this.state.nextFileName}&${this.state.nextYoutubeStartTime}&${this.state.nextItemPage}&${this.state.active}`}/annotate`}
                           >
                             <Button size="lg" type="primary" text="Next" />
                           </a>
