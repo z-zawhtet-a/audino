@@ -61,9 +61,17 @@ def fetch_data_for_project(project_id):
             db.session.query(Data)
             .filter(Data.assigned_user_id == request_user.id)
             .filter(Data.project_id == project_id)
-            .filter(Data.id.notin_(segmentations))
+            .filter(sa.or_(
+                Data.segmentations == None,  # Data with no Segmentations
+                Data.segmentations.any(Segmentation.transcription == "")  # or with empty transcriptions
+            ))
             .distinct()
             .order_by(Data.last_modified.desc())
+        )
+
+        subquery = sa.exists().where(
+            sa.and_(Segmentation.data_id == Data.id,
+            Segmentation.transcription == "")
         )
 
         data["completed"] = (
@@ -71,6 +79,7 @@ def fetch_data_for_project(project_id):
             .filter(Data.assigned_user_id == request_user.id)
             .filter(Data.project_id == project_id)
             .filter(Data.id.in_(segmentations))
+            .filter(sa.not_(subquery))
             .distinct()
             .order_by(Data.last_modified.desc())
         )
