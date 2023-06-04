@@ -17,10 +17,16 @@ class CreateUserForm extends React.Component {
       errorMessage: "",
       successMessage: "",
       isSubmitting: false,
+      showPassword: false,
     };
 
     this.state = Object.assign({}, this.initialState);
   }
+
+  // Add handler to toggle the password visibility
+  togglePasswordVisibility = () => {
+    this.setState((prevState) => ({ showPassword: !prevState.showPassword }));
+  };
 
   resetState() {
     this.setState(this.initialState);
@@ -107,7 +113,8 @@ class CreateUserForm extends React.Component {
   }
 
   render() {
-    const { isSubmitting, errorMessage, successMessage } = this.state;
+    const { isSubmitting, errorMessage, successMessage, showPassword } =
+      this.state;
     return (
       <div className="container h-75 text-center">
         <div className="row h-100 justify-content-center align-items-center">
@@ -143,13 +150,25 @@ class CreateUserForm extends React.Component {
             </div>
             <div className="form-group">
               <input
-                type="password"
+                type={showPassword ? "text" : "password"}
                 className="form-control"
                 id="password"
                 placeholder="Password"
                 required={true}
                 onChange={(e) => this.handlePasswordChange(e)}
               />
+              <div className="form-check">
+                <input
+                  type="checkbox"
+                  className="form-check-input"
+                  id="showPassword"
+                  checked={showPassword}
+                  onChange={this.togglePasswordVisibility}
+                />
+                <label className="form-check-label" htmlFor="showPassword">
+                  Show password
+                </label>
+              </div>
             </div>
             <div className="form-group">
               <select
