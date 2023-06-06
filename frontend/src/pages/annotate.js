@@ -313,17 +313,18 @@ class Annotate extends React.Component {
     wavesurfer.on("ready", () => {
       wavesurfer.enableDragSelection({ color: "rgba(0, 102, 255, 0.3)" });
       // Check if there is no region, if so, add a region for the whole audio
-      if (!Object.keys(wavesurfer.regions.list).length) {
-        wavesurfer.addRegion({
-          start: 0,
-          end: wavesurfer.getDuration(),
-        });
+      // Disable for diarization
+      // if (!Object.keys(wavesurfer.regions.list).length) {
+      //   wavesurfer.addRegion({
+      //     start: 0,
+      //     end: wavesurfer.getDuration(),
+      //   });
 
-        const firstRegionKey = Object.keys(wavesurfer.regions.list)[0];
-        this.setState({
-          selectedSegment: wavesurfer.regions.list[firstRegionKey],
-        });
-      }
+      //   const firstRegionKey = Object.keys(wavesurfer.regions.list)[0];
+      //   this.setState({
+      //     selectedSegment: wavesurfer.regions.list[firstRegionKey],
+      //   });
+      // }
     });
     wavesurfer.on("region-in", (region) => {
       this.showSegmentTranscription(region);
